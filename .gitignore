@@ -19,3 +19,11 @@
 
 # Unity3D Generated File On Crash Reports
 sysinfo.txt
+
+# folders
+/uquadtree_test/Assets/Editor
+/uquadtree_test/Assets/Standard Assets
+/uquadtree_test/Assets/UnityVS
+/uquadtree_test/Assets/Editor.meta
+/uquadtree_test/Assets/Standard Assets.meta
+/uquadtree_test/Assets/UnityVS.meta
