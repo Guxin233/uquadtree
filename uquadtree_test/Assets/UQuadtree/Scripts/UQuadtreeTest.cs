@@ -59,6 +59,10 @@ public class UQuadtreeTest : MonoBehaviour
         UTestPrototypes.Init();
 
         m_player = GameObject.Find("Player");
+
+        Renderer r = m_player.GetComponent<Renderer>() as Renderer;
+        Bounds b = r.bounds;
+
         m_moveTarget = GameObject.Find("MoveTarget");
 
         m_instRoot = GameObject.Find("Instances");
