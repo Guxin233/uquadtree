@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 
-public class UQuadtreeTest : MonoBehaviour
+public class UTestBootstrap : MonoBehaviour
 {
     UTestQtArena m_arena = new UTestQtArena();
     GameObject m_player = null;

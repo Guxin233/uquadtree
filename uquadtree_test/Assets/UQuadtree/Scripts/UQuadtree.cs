@@ -2,6 +2,24 @@
 using System.Collections;
 using System.Collections.Generic;
 
+public delegate void UQtCellChanged(UQtLeaf left, UQtLeaf entered);
+public delegate void UQtCellSwapIn(UQtLeaf leaf);
+public delegate void UQtCellSwapOut(UQtLeaf leaf);
+
+public static class UQtConfig
+{
+    // the cell would be created as leaf (stop dividing) if the size is smaller than this value
+    public static float CellSizeThreshold = 50.0f;
+    // swap-in distance of cells
+    public static float CellSwapInDist = 100.0f;
+    // swap-out distance of cells
+    public static float CellSwapOutDist = 150.0f;
+    // time interval to update the focus point (in seconds)
+    public static float SwapTriggerInterval = 0.5f;
+    // time interval to update the swapping queue (in seconds)
+    public static float SwapProcessInterval = 0.2f;
+}
+
 // user data stored in quadtree leaves
 public interface IQtUserData
 {
@@ -32,7 +50,7 @@ public class UQtNode
 
     public virtual void Receive(IQtUserData userData)
     {
-        if (!UQtInternalUtil.Intersects(Bound, userData))
+        if (!UQtAlgo.Intersects(Bound, userData))
         {
             return;
         }
@@ -60,7 +78,7 @@ public class UQtLeaf : UQtNode
 
     public override void Receive(IQtUserData userData)
     {
-        if (!UQtInternalUtil.Intersects(Bound, userData))
+        if (!UQtAlgo.Intersects(Bound, userData))
             return;
 
         if (Bound.Contains(new Vector2(userData.GetCenter().x, userData.GetCenter().z)))
@@ -128,7 +146,7 @@ public class UQuadtree
     public UQuadtree(Rect bound)
     {
         _root = new UQtNode(bound);
-        UQtInternalUtil.BuildRecursively(_root);
+        UQtAlgo.BuildRecursively(_root);
     }
 
     public void Update(Vector2 focusPoint)
@@ -167,7 +185,7 @@ public class UQuadtree
 
     private void DrawDebugLines()
     {
-        UQtInternalUtil.TraverseAllLeaves(_root, (leaf) => {
+        UQtAlgo.TraverseAllLeaves(_root, (leaf) => {
             Color c = Color.gray;
 
             if (leaf == _focusLeaf)
@@ -194,7 +212,7 @@ public class UQuadtree
     {
         _focusPoint = focusPoint;
 
-        UQtLeaf newLeaf = UQtInternalUtil.FindLeafRecursively(_root, _focusPoint);
+        UQtLeaf newLeaf = UQtAlgo.FindLeafRecursively(_root, _focusPoint);
         if (newLeaf == _focusLeaf)
             return false;
 
@@ -210,7 +228,7 @@ public class UQuadtree
         // 1. the initial in/out leaves generation
         List<UQtLeaf> inLeaves;
         List<UQtLeaf> outLeaves;
-        UQtInternalUtil.GenerateSwappingLeaves(_root, activeLeaf, _holdingLeaves, out inLeaves, out outLeaves);
+        UQtAlgo.GenerateSwappingLeaves(_root, activeLeaf, _holdingLeaves, out inLeaves, out outLeaves);
 
         // 2. filter out leaves which are already in the ideal states
         inLeaves.RemoveAll((leaf) => { return _swapInQueue.Contains(leaf); });
