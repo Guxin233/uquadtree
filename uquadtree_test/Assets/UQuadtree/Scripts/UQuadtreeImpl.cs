@@ -81,17 +81,24 @@ public static class UQtInternalUtil
         return null;
     }
 
-    public static void GenerateSwappingLeaves(UQtNode node, UQtLeaf active, out List<UQtLeaf> inLeaves, out List<UQtLeaf> outLeaves)
+    public static void GenerateSwappingLeaves(UQtNode node, UQtLeaf active, List<UQtLeaf> holdingLeaves, out List<UQtLeaf> inLeaves, out List<UQtLeaf> outLeaves)
     {
         List<UQtLeaf> inList = new List<UQtLeaf>();
         GenerateLeavesByDist(node, active, UQtConfig.CellSwapInDist, ref inList);
+        inList.RemoveAll((item) => holdingLeaves.Contains(item));
+        inLeaves = inList;
+
         List<UQtLeaf> outList = new List<UQtLeaf>();
         GenerateLeavesByDist(node, active, UQtConfig.CellSwapOutDist, ref outList);
-        
-        outList.RemoveAll((item) => inList.Contains(item));
-
-        inLeaves = inList;
-        outLeaves = outList;
+        List<UQtLeaf> outFilteredList = new List<UQtLeaf>();
+        foreach (var leaf in holdingLeaves)
+        {
+            if (!outList.Contains(leaf))
+            {
+                outFilteredList.Add(leaf);
+            }
+        }
+        outLeaves = outFilteredList;
     }
 
     private static void GenerateLeavesByDist(UQtNode node, UQtLeaf active, float dist, ref List<UQtLeaf> leaves)

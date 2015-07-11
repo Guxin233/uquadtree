@@ -9,17 +9,9 @@ public enum UQuad
     UpperRight,
 }
 
-public enum UQtLeafActions
-{
-    SwappingIn,
-    SwappedIn,
-
-    SwappingOut,
-    SwappedOut,
-}
-
 public delegate void UQtCellChanged(UQtLeaf left, UQtLeaf entered);
-public delegate void UQtCellSwapInOut(UQtLeaf leaf, UQtLeafActions action);
+public delegate void UQtCellSwapIn(UQtLeaf leaf);
+public delegate void UQtCellSwapOut(UQtLeaf leaf);
 
 public static class UQtConfig
 {
@@ -30,6 +22,8 @@ public static class UQtConfig
     // swap-out distance of cells
     public static float CellSwapOutDist = 150.0f;
     // time interval to update the focus point (in seconds)
-    public static float FocusUpdatingInterval = 0.1f;
+    public static float SwapTriggerInterval = 0.5f;
+    // time interval to update the swapping queue (in seconds)
+    public static float SwapProcessInterval = 0.2f;
 }
 
