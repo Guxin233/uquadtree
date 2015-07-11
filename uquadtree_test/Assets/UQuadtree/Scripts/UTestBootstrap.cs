@@ -5,7 +5,8 @@ using UnityEditor;
 
 public class UTestBootstrap : MonoBehaviour
 {
-    UTestQtArena m_arena = new UTestQtArena();
+    UTestQuadtree m_testbed = new UTestQuadtree();
+
     GameObject m_player = null;
     GameObject m_moveTarget = null;
 
@@ -14,7 +15,7 @@ public class UTestBootstrap : MonoBehaviour
 
     void Start()
     {
-        m_arena.Init();
+        m_testbed.Init();
         m_player = GameObject.Find("Player");
         m_moveTarget = GameObject.Find("MoveTarget");
     }
@@ -22,7 +23,7 @@ public class UTestBootstrap : MonoBehaviour
     void Update()
     {
         if (_drawDebugLines)
-            UCore.DrawRect(m_arena.Bound, 0.1f, Color.white);
+            UCore.DrawRect(m_testbed.Bound, 0.1f, Color.white);
 
         Vector3 target = m_moveTarget.transform.position;
         Vector3 dist = target - m_player.transform.position;
@@ -46,7 +47,7 @@ public class UTestBootstrap : MonoBehaviour
             }
         }
 
-        m_arena.Update(m_player.transform.position);
+        m_testbed.Update(m_player.transform.position);
     }
 
     void OnGUI()
@@ -59,12 +60,12 @@ public class UTestBootstrap : MonoBehaviour
         _alwaysMove = GUI.Toggle(new Rect(50, Screen.height * 0.2f, 100, 20), _alwaysMove, "Always Move");
         _drawDebugLines = GUI.Toggle(new Rect(50, Screen.height * 0.25f, 100, 20), _drawDebugLines, "Debug Lines");
 
-        if (_drawDebugLines != m_arena.Quadtree.EnableDebugLines)
-            m_arena.Quadtree.EnableDebugLines = _drawDebugLines;
+        if (_drawDebugLines != m_testbed.Quadtree.EnableDebugLines)
+            m_testbed.Quadtree.EnableDebugLines = _drawDebugLines;
     }
 
     void SetNewTarget()
     {
-        m_moveTarget.transform.position = m_arena.NewRandomPoint(0.8f);
+        m_moveTarget.transform.position = m_testbed.NewRandomPoint(0.8f);
     }
 }

@@ -59,8 +59,7 @@ public class UTestPrototypes
     }
 }
 
-
-public class UTestQtArena
+public class UTestQuadtree
 {
     public Vector2 Min = new Vector2(-300, -300);
     public Vector2 Max = new Vector2(300, 300);
