@@ -14,6 +14,8 @@ public class UTestArena
             0,
             Random.Range(Min.y, Max.y) * magnitude);
     }
+
+    public Rect Bound { get { return new Rect(Min.x, Min.y, Max.x - Min.x, Max.y - Min.y); } }
 }
 
 public class UTestPrototypes
@@ -52,7 +54,10 @@ public class UQuadtreeTest : MonoBehaviour
     GameObject m_player = null;
     GameObject m_moveTarget = null;
 
+    UQuadtree m_qt;
+
     bool _alwaysMove = false;
+    bool _drawDebugLines = false;
 
     void Start()
     {
@@ -73,14 +78,19 @@ public class UQuadtreeTest : MonoBehaviour
                 GameObject instance = UTestPrototypes.NewRandom();
                 instance.transform.localPosition = m_arena.NewRandomPoint();
                 instance.transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
-                instance.transform.localRotation.SetEulerAngles(0.0f, Random.Range(0.0f, 360.0f), 0.0f);
+                instance.transform.localRotation = Quaternion.Euler(0.0f, Random.Range(0.0f, 360.0f), 0.0f);
                 instance.transform.parent = m_instRoot.transform;
             }
         }
+
+        m_qt = new UQuadtree(m_arena.Bound);
     }
 
     void Update()
     {
+        if (_drawDebugLines)
+            UCore.DrawRect(m_arena.Bound, 0.1f, Color.white);
+
         Vector3 target = m_moveTarget.transform.position;
         Vector3 dist = target - m_player.transform.position;
         if (dist.magnitude > 1.0f)
@@ -102,6 +112,8 @@ public class UQuadtreeTest : MonoBehaviour
                 SetNewTarget();
             }
         }
+
+        m_qt.Update(new Vector2(m_player.transform.position.x, m_player.transform.position.z));
     }
 
     void OnGUI()
@@ -111,7 +123,11 @@ public class UQuadtreeTest : MonoBehaviour
             SetNewTarget();
         }
 
-        _alwaysMove = GUI.Toggle(new Rect(50, Screen.height * 0.2f - 40, 100, 40), _alwaysMove, "Always Move");
+        _alwaysMove = GUI.Toggle(new Rect(50, Screen.height * 0.2f, 100, 20), _alwaysMove, "Always Move");
+        _drawDebugLines = GUI.Toggle(new Rect(50, Screen.height * 0.25f, 100, 20), _drawDebugLines, "Debug Lines");
+
+        if (_drawDebugLines != m_qt.EnableDebugLines)
+            m_qt.EnableDebugLines = _drawDebugLines;
     }
 
     void SetNewTarget()

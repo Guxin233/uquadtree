@@ -2,26 +2,16 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public static class UQuadtreeConfig
-{
-    // the cell would be created as leaf (stop dividing) if the size is smaller than this value
-    public static float CellSizeThreshold = 5.0f;
-    // swap-in distance of cells
-    public static float CellSwapInDist = 10.0f;
-    // swap-out distance of cells
-    public static float CellSwapOutDist = 15.0f;
-}
-
 // user data stored in quadtree leaves
-public interface IQuadreeUserData
+public interface IQtUserData
 {
     Vector3 GetCenter();
     Vector3 GetExtends();
 }
 
-public class UQuadtreeNode
+public class UQtNode
 {
-    public UQuadtreeNode(Rect bound)
+    public UQtNode(Rect bound)
     {
         _bound = bound;
     }
@@ -29,14 +19,14 @@ public class UQuadtreeNode
     public Rect Bound { get { return _bound; } }
     protected Rect _bound;
 
-    public virtual void SetSubNodes(UQuadtreeNode[] subNodes)
+    public virtual void SetSubNodes(UQtNode[] subNodes)
     {
         _subNodes = subNodes;
     }
 
-    public virtual void Receive(IQuadreeUserData userData)
+    public virtual void Receive(IQtUserData userData)
     {
-        if (!UQuadtreeInternalUtil.Intersects(Bound, userData))
+        if (!UQtInternalUtil.Intersects(Bound, userData))
         {
             return;
         }
@@ -47,75 +37,125 @@ public class UQuadtreeNode
         }
     }
 
-    public UQuadtreeNode[] SubNodes { get { return _subNodes; } }
+    public UQtNode[] SubNodes { get { return _subNodes; } }
     public const int SubCount = 4;
-    protected UQuadtreeNode[] _subNodes = null;
+    protected UQtNode[] _subNodes = null;
 }
 
-public class UQuadtreeLeaf : UQuadtreeNode
+public class UQtLeaf : UQtNode
 {
-    public UQuadtreeLeaf(Rect bound) : base(bound)
+    public UQtLeaf(Rect bound) : base(bound)
     {
     }
-    public override void SetSubNodes(UQuadtreeNode[] subNodes)
+    public override void SetSubNodes(UQtNode[] subNodes)
     {
         UCore.Assert(false);
     }
 
-    public override void Receive(IQuadreeUserData userData)
+    public override void Receive(IQtUserData userData)
     {
-        if (!UQuadtreeInternalUtil.Intersects(Bound, userData))
-        {
+        if (!UQtInternalUtil.Intersects(Bound, userData))
             return;
-        }
 
         if (Bound.Contains(new Vector2(userData.GetCenter().x, userData.GetCenter().z)))
         {
+            if (_ownedObjects == null)
+                _ownedObjects = new List<IQtUserData>();
             _ownedObjects.Add(userData);            
         }
         else
         {
+            if (_affectedObjects == null)
+                _affectedObjects = new List<IQtUserData>();
             _affectedObjects.Add(userData);
         }
     }
 
-    private List<IQuadreeUserData> _ownedObjects;
-    private List<IQuadreeUserData> _affectedObjects;
+    private List<IQtUserData> _ownedObjects;
+    private List<IQtUserData> _affectedObjects;
 }
 
 public class UQuadtree
 {
     public UQuadtree(Rect bound)
     {
-        _root = new UQuadtreeNode(bound);
-        UQuadtreeInternalUtil.BuildRecursively(_root);
+        _root = new UQtNode(bound);
+        UQtInternalUtil.BuildRecursively(_root);
     }
 
-    public void Update(Vector3 focusPoint)
+    public void Update(Vector2 focusPoint)
     {
-        _focusPoint = focusPoint;
-
-        UQuadtreeLeaf newLeaf = UQuadtreeInternalUtil.FindLeafRecursively(_root, _focusPoint);
-        if (newLeaf != _focusLeaf)
+        if (EnableDebugLines)
         {
-            if (FocusCellChanged != null)
-            {
-                FocusCellChanged(_focusLeaf, newLeaf);
-            }
-            _focusLeaf = newLeaf;
+            DrawDebugLines();
         }
+
+        if (Time.time - _lastSwapTime > UQtConfig.FocusUpdatingInterval)
+        {
+            if (UpdateFocus(focusPoint))
+                ProcessSwapping(_focusLeaf);
+            _lastSwapTime = Time.time;
+        }
+
     }
 
-    public event UQuadtreeCellChanged FocusCellChanged;
+    public event UQtCellChanged FocusCellChanged;
 
     public Rect SceneBound { get { return _root.Bound; } }
     public Vector3 FocusPoint { get { return _focusPoint; } }
+    public bool EnableDebugLines { get; set; }
 
-    private UQuadtreeNode _root;
+    private void DrawDebugLines()
+    {
+        UQtInternalUtil.TraverseAllLeaves(_root, (leaf) => {
+            Color c = Color.gray;
+
+            if (leaf == _focusLeaf)
+            {
+                c = Color.blue;
+            }
+            else if (_swapInLeaves.Contains(leaf))
+            {
+                c = Color.green;
+            }
+            else if (_swapOutLeaves.Contains(leaf))
+            {
+                c = Color.red;
+            }
+            UCore.DrawRect(leaf.Bound, 0.1f, c, 1.0f); 
+        });
+    }
+
+    private bool UpdateFocus(Vector2 focusPoint)
+    {
+        _focusPoint = focusPoint;
+
+        UQtLeaf newLeaf = UQtInternalUtil.FindLeafRecursively(_root, _focusPoint);
+        if (newLeaf == _focusLeaf)
+            return false;
+
+        if (FocusCellChanged != null)
+            FocusCellChanged(_focusLeaf, newLeaf);
+
+        _focusLeaf = newLeaf;
+        return true;
+    }
+
+    private void ProcessSwapping(UQtLeaf activeLeaf)
+    {
+        // refresh swapping lists
+        UQtInternalUtil.GenerateSwappingLeaves(_root, activeLeaf, out _swapInLeaves, out _swapOutLeaves);
+    }
+
+    private UQtNode _root;
+
     private Vector3 _focusPoint;
-    private UQuadtreeLeaf _focusLeaf;
+    private UQtLeaf _focusLeaf;
 
-    private List<UQuadtreeLeaf> _holdingLeaves = new List<UQuadtreeLeaf>();
-    private List<UQuadtreeLeaf> _swapInLeaves = new List<UQuadtreeLeaf>();
-    private List<UQuadtreeLeaf> _swapOutLeaves = new List<UQuadtreeLeaf>();
+    private List<UQtLeaf> _holdingLeaves = new List<UQtLeaf>();
+    private List<UQtLeaf> _swapInLeaves = new List<UQtLeaf>();
+    private List<UQtLeaf> _swapOutLeaves = new List<UQtLeaf>();
+
+    private float _lastSwapTime = 0.0f;
+
 }
