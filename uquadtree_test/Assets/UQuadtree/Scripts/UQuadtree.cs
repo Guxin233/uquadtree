@@ -8,6 +8,9 @@ public interface IQtUserData
     Vector3 GetCenter();
     Vector3 GetExtends();
 
+    void SwapIn();
+    void SwapOut();
+
     bool IsSwapInCompleted();
     bool IsSwapOutCompleted();
 }
@@ -36,7 +39,7 @@ public class UQtNode
 
         foreach (var sub in SubNodes)
         {
-            Receive(userData);
+            sub.Receive(userData);
         }
     }
 
@@ -68,6 +71,22 @@ public class UQtLeaf : UQtNode
         {
             _affectedObjects.Add(userData);
         }
+    }
+
+    public void SwapIn()
+    {
+        foreach (var obj in _ownedObjects)
+            obj.SwapIn();
+        foreach (var obj in _affectedObjects)
+            obj.SwapIn();
+    }
+
+    public void SwapOut()
+    {
+        foreach (var obj in _ownedObjects)
+            obj.SwapOut();
+        foreach (var obj in _affectedObjects)
+            obj.SwapOut();
     }
 
     public bool IsSwapInCompleted()
@@ -131,6 +150,11 @@ public class UQuadtree
             ProcessSwapQueues();
             _lastSwapProcessedTime = Time.time;
         }
+    }
+
+    public void Receive(IQtUserData qud)
+    {
+        _root.Receive(qud);
     }
 
     public event UQtCellChanged FocusCellChanged;
@@ -200,6 +224,7 @@ public class UQuadtree
     {
         foreach (var leaf in inLeaves)
         {
+            leaf.SwapIn();
             _swapInQueue.Add(leaf);
             if (CellSwapIn != null)
                 CellSwapIn(leaf);
@@ -210,6 +235,7 @@ public class UQuadtree
     {
         foreach (var leaf in outLeaves)
         {
+            leaf.SwapOut();
             _holdingLeaves.Remove(leaf);
             _swapOutQueue.Add(leaf);
             if (CellSwapOut != null)
