@@ -108,8 +108,10 @@ public class UQtLeaf : UQtNode
     {
         foreach (var obj in _ownedObjects)
             obj.SwapOut();
-        foreach (var obj in _affectedObjects)
-            obj.SwapOut();
+
+        // only owned queue swap out
+        //foreach (var obj in _affectedObjects)
+        //    obj.SwapOut();
     }
 
     public bool IsSwapInCompleted()
