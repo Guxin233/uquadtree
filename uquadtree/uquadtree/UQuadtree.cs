@@ -96,6 +96,15 @@ public class UQtLeaf : UQtNode
         }
     }
 
+    public bool Contains(IQtUserData userData)
+    {
+        if (_ownedObjects.Contains(userData))
+            return true;
+        if (_affectedObjects.Contains(userData))
+            return true;
+        return false;
+    }
+
     public void SwapIn()
     {
         foreach (var obj in _ownedObjects)
@@ -108,10 +117,6 @@ public class UQtLeaf : UQtNode
     {
         foreach (var obj in _ownedObjects)
             obj.SwapOut();
-
-        // only owned queue swap out
-        //foreach (var obj in _affectedObjects)
-        //    obj.SwapOut();
     }
 
     public bool IsSwapInCompleted()
@@ -136,13 +141,10 @@ public class UQtLeaf : UQtNode
             if (!obj.IsSwapOutCompleted())
                 return false;
         }
-        foreach (var obj in _affectedObjects)
-        {
-            if (!obj.IsSwapOutCompleted())
-                return false;
-        }
         return true;
     }
+
+    public List<IQtUserData> AffectedObjects { get { return _affectedObjects; } }
 
     private List<IQtUserData> _ownedObjects = new List<IQtUserData>();
     private List<IQtUserData> _affectedObjects = new List<IQtUserData>();
@@ -262,10 +264,31 @@ public class UQuadtree
         {
             leaf.SwapOut();
             _holdingLeaves.Remove(leaf);
+
+            var affected = leaf.AffectedObjects;
+            foreach (var item in affected)
+            {
+                if (!IsHoldingUserData(item))
+                    item.SwapOut();
+            }
+
             _swapOutQueue.Add(leaf);
             if (CellSwapOut != null)
                 CellSwapOut(leaf);
         }
+    }
+
+    private bool IsHoldingUserData(IQtUserData userData)
+    {
+        foreach (var hLeaf in _holdingLeaves)
+        {
+            if (hLeaf.Contains(userData))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void ProcessSwapQueues()
